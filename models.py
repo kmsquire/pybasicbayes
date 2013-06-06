@@ -72,8 +72,15 @@ class Mixture(ModelGibbsSampling, ModelMeanField, ModelEM):
         for l in self.labels_list:
             l.resample(temp=temp)
 
-        for idx, c in enumerate(self.components):
-            c.resample(data=[(l.data[l.z == idx] if len(l.data[l.z == idx]) > 0 else []) for l in self.labels_list]) # numpy issue #2587, np.array([]).reshape((0,2))[[]]
+        if len(self.labels_list) > 0:
+            for idx, c in enumerate(self.components):
+                data = []
+                for l in self.labels_list:
+                    zidx = (l.z == idx)
+                    if any(zidx):
+                        data += [x for x in l.data[zidx]]
+                if np.size(data) > 0:
+                    c.resample(data=data)
 
         self.weights.resample([l.z for l in self.labels_list])
 

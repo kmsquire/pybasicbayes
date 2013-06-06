@@ -998,6 +998,24 @@ class CategoricalAndConcentration(Categorical):
     def max_likelihood(self,*args,**kwargs):
         raise NotImplementedError, "max_likelihood doesn't make sense on this object"
 
+LOGFACT_MAX = 32768
+_logfact = np.zeros(LOGFACT_MAX)
+for i in range(2,LOGFACT_MAX):
+    _logfact[i] = _logfact[i-1]+np.log(i)
+
+def logfact(n):
+
+    if isinstance(n, np.ndarray):
+        return np.array([logfact(x) for x in n])
+
+    if isinstance(n, list):
+        return [logfact(x) for x in n]
+
+    if n < LOGFACT_MAX:
+        return _logfact[n]
+
+    x = n + 1;
+    return (x - 0.5)*np.log(x) - x + 0.5*np.log(2*np.pi) + 1.0/(12.0*x);
 
 class Multinomial(Categorical):
     '''
@@ -1009,7 +1027,11 @@ class Multinomial(Categorical):
     A Poisson process conditioned on the number of points emitted.
     '''
     def log_likelihood(self,x):
-        return np.bincount(x,minlength=self.K)*np.log(self.weights)
+        x = np.reshape(x, (-1, self.K))
+        if any(self.weights == 0.0):
+            self.weights += spacing(1)*8*len(self.weights)
+            self.weights /= (1.0 + spacing(1)*8*len(self.weights)*len(self.weights))
+        return logfact(np.sum(x, axis=1)) - np.sum([logfact(i) for i in x], axis=1) + np.sum(np.multiply(x, np.log(self.weights)), axis=1)
 
     def resample(self,data=[]):
         'data is an array of counts or a list of such arrays)'
