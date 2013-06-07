@@ -1301,7 +1301,7 @@ class _NegativeBinomialBase(Distribution):
             return ret
 
     def rvs(self,size=None):
-        return np.random.poisson(np.random.gamma(self.r,self.p/(1-self.p),size=size))
+        return np.array(np.random.poisson(np.random.gamma(self.r,(1-self.p)/self.p,size=size)), ndmin=1)
 
 
 class NegativeBinomial(_NegativeBinomialBase, GibbsSampling):
